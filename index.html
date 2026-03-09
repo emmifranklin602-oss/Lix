@@ -5,182 +5,96 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SecureSocial - AI Privacy Social Network by Emmi Franklin</title>
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body { 
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-    min-height: 100vh;
-    color: #2d3748;
-}
-.app { max-width: 480px; margin: 0 auto; }
-.screen { 
-    background: white; border-radius: 24px; 
-    box-shadow: 0 25px 50px rgba(0,0,0,0.25);
-    margin: 1rem; padding: 2rem; display: none;
-}
-.screen.active { display: block; animation: slideUp 0.4s ease-out; }
-@keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-.header { text-align: center; margin-bottom: 2rem; background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 2rem; border-radius: 20px; }
-.logo { font-size: 2.5rem; font-weight: 800; margin-bottom: 0.5rem; }
-.status-bar { background: #f7fafc; padding: 1rem; border-radius: 16px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; font-weight: 600; }
-.status.online { color: #48bb78; }
-.status.verified { color: #3182ce; }
-.btn { background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; padding: 1rem 2rem; border-radius: 12px; font-size: 1.1rem; font-weight: 600; cursor: pointer; width: 100%; margin: 0.5rem 0; transition: all 0.3s ease; }
-.btn:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(102,126,234,0.4); }
-.btn-secondary { background: #e2e8f0; color: #4a5568; }
-.input-group { margin: 1.5rem 0; }
-.input-group label { display: block; margin-bottom: 0.5rem; font-weight: 600; }
-.input, .camera-area { width: 100%; padding: 1rem; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 1rem; transition: border-color 0.3s; }
-.input:focus, .camera-area:focus { outline: none; border-color: #667eea; }
-.camera-area { min-height: 200px; background: #f7fafc; text-align: center; padding: 3rem 1rem; }
-.selfie-preview { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 4px solid #48bb78; }
-.news-card, .story-card, .poll-card { background: #f8f9ff; border-radius: 16px; padding: 1.5rem; margin: 1rem 0; border-left: 4px solid #667eea; }
-.news-header { font-weight: 600; margin-bottom: 0.5rem; }
-.ai-verified { color: #48bb78; font-size: 0.9rem; }
-.poll-options { display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1rem; }
-.poll-option { padding: 1rem; background: white; border-radius: 12px; cursor: pointer; transition: all 0.3s; border: 2px solid transparent; }
-.poll-option:hover { border-color: #667eea; transform: translateY(-1px); }
-.poll-option.selected { background: #667eea; color: white; }
-.user-list { display: flex; flex-wrap: wrap; gap: 0.75rem; margin: 1rem 0; }
-.user { background: #e6fffa; padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.9rem; font-weight: 600; }
-.chat-messages { max-height: 300px; overflow-y: auto; background: #f7fafc; border-radius: 12px; padding: 1rem; }
-.message { margin: 0.75rem 0; display: flex; gap: 0.75rem; }
-.message.sent { justify-content: flex-end; }
-.message-bubble { max-width: 70%; padding: 0.75rem 1rem; border-radius: 18px; }
-.message.sent .message-bubble { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
-.message.received .message-bubble { background: white; border: 1px solid #e2e8f0; }
-.saved-profiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; }
-.profile-card { text-align: center; padding: 1rem; background: white; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-.profile-avatar { width: 60px; height: 60px; border-radius: 50%; background: #e2e8f0; margin: 0 auto 0.5rem; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
-.verified-badge { color: #48bb78; font-size: 0.8rem; }
-@media (max-width: 480px) { .app { margin: 0.5rem; } .screen { margin: 0.5rem; padding: 1.5rem; } }
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background:linear-gradient(135deg,#1e3c72 0%,#2a5298 100%); min-height:100vh; color:#2d3748; }
+.app { max-width:480px; margin:0 auto; }
+.screen { background:white; border-radius:24px; box-shadow:0 25px 50px rgba(0,0,0,0.25); margin:1rem; padding:2rem; display:none; }
+.screen.active { display:block; animation:slideUp 0.4s ease-out; }
+@keyframes slideUp { from { transform: translateY(30px); opacity:0; } to { transform: translateY(0); opacity:1; } }
+.header { text-align:center; margin-bottom:2rem; background:linear-gradient(135deg,#667eea,#764ba2); color:white; padding:2rem; border-radius:20px; }
+.logo { font-size:2.5rem; font-weight:800; margin-bottom:0.5rem; }
+.status-bar { background:#f7fafc; padding:1rem; border-radius:16px; display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; font-weight:600; }
+.status.online { color:#48bb78; }
+.status.verified { color:#3182ce; }
+.btn { background:linear-gradient(135deg,#667eea,#764ba2); color:white; border:none; padding:1rem 2rem; border-radius:12px; font-size:1.1rem; font-weight:600; cursor:pointer; width:100%; margin:0.5rem 0; transition:all 0.3s ease; }
+.btn:hover { transform:translateY(-2px); box-shadow:0 10px 25px rgba(102,126,234,0.4); }
+.btn-secondary { background:#e2e8f0; color:#4a5568; }
+.input-group { margin:1.5rem 0; }
+.input-group label { display:block; margin-bottom:0.5rem; font-weight:600; }
+.input, .camera-area { width:100%; padding:1rem; border:2px solid #e2e8f0; border-radius:12px; font-size:1rem; transition:border-color 0.3s; }
+.input:focus, .camera-area:focus { outline:none; border-color:#667eea; }
+.camera-area { min-height:200px; background:#f7fafc; text-align:center; padding:3rem 1rem; }
+.selfie-preview { width:120px; height:120px; border-radius:50%; object-fit:cover; border:4px solid #48bb78; }
+.news-card, .story-card, .poll-card { background:#f8f9ff; border-radius:16px; padding:1.5rem; margin:1rem 0; border-left:4px solid #667eea; }
+.news-header { font-weight:600; margin-bottom:0.5rem; }
+.ai-verified { color:#48bb78; font-size:0.9rem; }
+.poll-options { display:flex; flex-direction:column; gap:0.75rem; margin-top:1rem; }
+.poll-option { padding:1rem; background:white; border-radius:12px; cursor:pointer; transition:all 0.3s; border:2px solid transparent; }
+.poll-option:hover { border-color:#667eea; transform:translateY(-1px); }
+.poll-option.selected { background:#667eea; color:white; }
+.user-list { display:flex; flex-wrap:wrap; gap:0.75rem; margin:1rem 0; }
+.user { background:#e6fffa; padding:0.5rem 1rem; border-radius:20px; font-size:0.9rem; font-weight:600; }
+.chat-messages { max-height:300px; overflow-y:auto; background:#f7fafc; border-radius:12px; padding:1rem; }
+.message { margin:0.75rem 0; display:flex; gap:0.75rem; }
+.message.sent { justify-content:flex-end; }
+.message-bubble { max-width:70%; padding:0.75rem 1rem; border-radius:18px; }
+.message.sent .message-bubble { background:linear-gradient(135deg,#667eea,#764ba2); color:white; }
+.message.received .message-bubble { background:white; border:1px solid #e2e8f0; }
+.saved-profiles { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:1rem; }
+.profile-card { text-align:center; padding:1rem; background:white; border-radius:16px; box-shadow:0 4px 12px rgba(0,0,0,0.1); cursor:pointer; }
+.profile-avatar { width:60px; height:60px; border-radius:50%; background:#e2e8f0; margin:0 auto 0.5rem; display:flex; align-items:center; justify-content:center; font-size:1.5rem; }
+.verified-badge { color:#48bb78; font-size:0.8rem; }
+@media (max-width:480px) { .app { margin:0.5rem; } .screen { margin:0.5rem; padding:1.5rem; } }
 </style>
 </head>
 <body>
 <div class="app">
 
-<!-- Authentication Screen -->
-<div id="auth" class="screen active">
-  <div class="header">
-    <div class="logo">🔒 SecureSocial</div>
-    <p style="opacity: 0.95;">Login / Sign Up</p>
-  </div>
-  <div class="input-group">
-    <label>Email</label>
-    <input type="email" class="input" id="authEmail" placeholder="you@example.com">
-  </div>
-  <div class="input-group">
-    <label>Password</label>
-    <input type="password" class="input" id="authPassword" placeholder="••••••••">
-  </div>
-  <button class="btn" onclick="login()">Login 🔑</button>
-  <button class="btn btn-secondary" onclick="signup()">Sign Up 📝</button>
-</div>
-
-<!-- Onboarding Screen -->
-<div id="onboarding" class="screen">
-  <div class="header">
-    <div class="logo">🔒 SecureSocial</div>
-    <p style="opacity: 0.95;">AI-Powered Privacy Network</p>
-  </div>
-  <div class="status-bar">
-    <span>Status: <span class="status online">🟢 Online</span></span>
-    <span>🔒 E2EE Active</span>
-  </div>
-  <button class="btn" onclick="showScreen('selfieVerify')">Start Selfie Verification</button>
-  <button class="btn btn-secondary" onclick="showScreen('demo')">Demo Mode</button>
-</div>
-
-<!-- Selfie Verification -->
-<div id="selfieVerify" class="screen">
-  <div class="header">
-    <div class="logo">📸 Verify Identity</div>
-    <p>AI Liveness Detection + Biometric Match</p>
-  </div>
-  <div class="input-group">
-    <label>Username</label>
-    <input type="text" class="input" id="username" placeholder="emmi_franklin" value="emmi_franklin">
-  </div>
-  <div class="input-group">
-    <label>Live Selfie (AI Liveness Check)</label>
-    <div class="camera-area" onclick="simulateSelfie()">
-      <div style="font-size: 4rem; margin-bottom: 1rem;">📷</div>
-      <p>Tap for AI verification<br><small>Hold steady • Good lighting</small></p>
+  <!-- Authentication Screen -->
+  <div id="authScreen" class="screen active">
+    <div class="header">
+      <div class="logo">🔐 Sign In / Sign Up</div>
+      <p>SecureSocial Authentication</p>
     </div>
-    <img id="selfiePreview" class="selfie-preview" style="display: none; margin-top: 1rem;">
-  </div>
-  <button class="btn" onclick="verifySelfie()">🔍 Verify with AI (3s)</button>
-  <div id="verificationStatus" style="display: none; text-align: center; margin-top: 1rem;"></div>
-</div>
-
-<!-- Main Dashboard -->
-<div id="dashboard" class="screen">
-  <div class="header">
-    <div class="logo">🏠 Home</div>
-    <p id="dashboardUser">Emmi Franklin <span class="verified-badge">✅ Verified</span></p>
-  </div>
-  <div class="status-bar">
-    <span>🟢 Online</span>
-    <span id="friendCount">👥 24 friends</span>
-    <span id="storyCount">📰 12 stories</span>
-  </div>
-  <div class="news-card">
-    <div class="news-header">📰 AI-Curated News (Daily Digest)</div>
-    <div class="ai-verified">✅ Verified by Emmi's AI News Checker</div>
-    <div style="margin-top: 1rem; font-size: 0.95rem;">
-      • Global privacy laws update<br>
-      • AI ethics breakthrough<br>
-      • SecureSocial v2.0 announced
+    <div class="input-group">
+      <label>Email</label>
+      <input type="email" id="authEmail" class="input" placeholder="you@example.com">
     </div>
+    <div class="input-group">
+      <label>Password</label>
+      <input type="password" id="authPassword" class="input" placeholder="••••••••">
+    </div>
+    <button class="btn" onclick="loginUser()">Login</button>
+    <button class="btn btn-secondary" onclick="signupUser()">Sign Up</button>
   </div>
-  <div style="margin: 2rem 0;">
-    <h3 style="margin-bottom: 1rem;">💾 Saved Profiles</h3>
-    <div class="saved-profiles" id="savedProfiles"></div>
-  </div>
-  <button class="btn btn-secondary" onclick="showScreen('polls')">View Polls</button>
-  <button class="btn btn-secondary" onclick="showScreen('groups')">Groups</button>
-</div>
 
-<!-- Polls Screen -->
-<div id="polls" class="screen">
-  <div class="header">
-    <div class="logo">📊 Polls</div>
-    <p>From saved profiles</p>
+  <!-- Dashboard -->
+  <div id="dashboard" class="screen">
+    <div class="header">
+      <div class="logo">🏠 Home</div>
+      <p>User Dashboard <span class="verified-badge">✅ Verified</span></p>
+    </div>
+    <div class="status-bar">
+      <span>🟢 Online</span>
+      <span>👥 24 friends</span>
+      <span>📰 12 stories</span>
+    </div>
+    <button class="btn btn-secondary" onclick="showScreen('authScreen')">Logout</button>
   </div>
-  <div class="poll-card" id="pollCard"></div>
-  <button class="btn" onclick="showScreen('dashboard')">← Back to Home</button>
-</div>
-
-<!-- Chat Screen -->
-<div id="chat" class="screen">
-  <div class="header">
-    <div class="logo">💬 Secure Chat</div>
-    <div id="chatHeader">Select a profile</div>
-  </div>
-  <div class="status-bar">
-    <span id="chatStatus" class="status secure">🔒 End-to-End Encrypted</span>
-  </div>
-  <div id="chatMessages" class="chat-messages"></div>
-  <div style="margin-top: 1rem;">
-    <input type="text" class="input" id="chatInput" placeholder="Type secure message..." onkeypress="if(event.key==='Enter') sendMessage()">
-    <button class="btn" style="margin-top: 0.5rem;" onclick="sendMessage()">Send 🔒</button>
-  </div>
-  <button class="btn btn-secondary" onclick="showScreen('dashboard')">← Back</button>
-</div>
 
 </div>
 
+<!-- Firebase SDK -->
 <script type="module">
-// Firebase App (the core Firebase SDK)
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.6.1/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.6.1/firebase-auth.js";
-import { getDatabase, ref, set, push, onValue } from "https://www.gstatic.com/firebasejs/10.6.1/firebase-database.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-analytics.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
-// --- Your Firebase config ---
+// Your Firebase Config
 const firebaseConfig = {
   apiKey: "AIzaSyAHSDsfR9SBlYaemSLDL6Z2qNR1x0QREuM",
   authDomain: "social-d0b33.firebaseapp.com",
-  databaseURL: "https://social-d0b33-default-rtdb.firebaseio.com",
   projectId: "social-d0b33",
   storageBucket: "social-d0b33.appspot.com",
   messagingSenderId: "1004582299104",
@@ -188,117 +102,52 @@ const firebaseConfig = {
   measurementId: "G-Q2D3FBDEXD"
 };
 
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getDatabase(app);
+const analytics = getAnalytics(app);
+const auth = getAuth();
+const database = getDatabase(app);
 
-// ---------------------
-// Authentication Functions
-// ---------------------
-function signup() {
-  const email = document.getElementById("authEmail").value;
-  const password = document.getElementById("authPassword").value;
-  createUserWithEmailAndPassword(auth, email, password)
-    .then(userCredential => {
-      const user = userCredential.user;
-      set(ref(db, 'users/' + user.uid), { email, username: "NewUser" });
-      showScreen('onboarding');
-    })
-    .catch(error => alert(error.message));
-}
-
-function login() {
-  const email = document.getElementById("authEmail").value;
-  const password = document.getElementById("authPassword").value;
-  signInWithEmailAndPassword(auth, email, password)
-    .then(userCredential => showScreen('onboarding'))
-    .catch(error => alert(error.message));
-}
-
-// Keep user logged in
-onAuthStateChanged(auth, user => {
-  if (user) showScreen('onboarding');
-});
-
-// ---------------------
-// App UI Functions
-// ---------------------
+// Screen switching
 function showScreen(screenId) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(screenId).classList.add('active');
 }
 
-function simulateSelfie() {
-  document.querySelector('.camera-area').innerHTML = `
-      <div style="font-size: 3rem;">🤳</div>
-      <p>AI analyzing liveness...<br><small>Blink detection • Head turn • Depth analysis</small></p>
-  `;
-  setTimeout(() => {
-      document.querySelector('.camera-area').innerHTML = `
-          <img src="https://images.unsplash.com/photo-1494790108755-2616b612b786?w=300&h=300&fit=crop&crop=face" 
-               class="selfie-preview" id="selfiePreview">
-          <p style="color: #48bb78; font-weight: 600;">✅ Face captured</p>
-      `;
-      document.getElementById('selfiePreview').style.display = 'block';
-  }, 1500);
+// Signup
+window.signupUser = function() {
+  const email = document.getElementById('authEmail').value;
+  const password = document.getElementById('authPassword').value;
+  if(!email || !password) return alert("Enter email and password!");
+  createUserWithEmailAndPassword(auth,email,password)
+    .then(userCredential=>{
+      const uid = userCredential.user.uid;
+      // Save user in Realtime Database
+      set(ref(database,'users/'+uid),{email:email,createdAt:Date.now()});
+      alert("User registered!");
+      showScreen('dashboard');
+    })
+    .catch(error=>alert(error.message));
 }
 
-function verifySelfie() {
-  document.getElementById('verificationStatus').innerHTML = `
-      <div style="color: #48bb78; font-weight: 600;">
-          ✅ AI Verification Complete!<br>
-          <small>Liveness: 98% • Biometric Match: 99.2%</small>
-      </div>
-  `;
-  document.getElementById('verificationStatus').style.display = 'block';
-  setTimeout(() => showScreen('dashboard'), 2000);
+// Login
+window.loginUser = function() {
+  const email = document.getElementById('authEmail').value;
+  const password = document.getElementById('authPassword').value;
+  if(!email || !password) return alert("Enter email and password!");
+  signInWithEmailAndPassword(auth,email,password)
+    .then(userCredential=>{
+      alert("User logged in!");
+      showScreen('dashboard');
+    })
+    .catch(error=>alert(error.message));
 }
 
-// ---------------------
-// Chat Functions
-// ---------------------
-let currentChat = '';
-function showChat(user) {
-  currentChat = user;
-  document.getElementById('chatHeader').textContent = user;
-  document.getElementById('chatStatus').innerHTML = '🔒 End-to-End Encrypted with ' + user;
-  showScreen('chat');
-
-  const chatRef = ref(db, 'chats/' + currentChat);
-  onValue(chatRef, snapshot => {
-      const messages = snapshot.val();
-      const chatMessages = document.getElementById('chatMessages');
-      chatMessages.innerHTML = '';
-      for (let key in messages) {
-          const msg = messages[key];
-          chatMessages.innerHTML += `
-              <div class="message ${msg.sender === auth.currentUser.uid ? 'sent' : 'received'}">
-                  <div class="message-bubble">${msg.text}</div>
-              </div>
-          `;
-      }
-      chatMessages.scrollTop = chatMessages.scrollHeight;
-  });
-}
-
-function sendMessage() {
-  const input = document.getElementById('chatInput');
-  const msg = input.value.trim();
-  if (!msg) return;
-
-  const chatRef = ref(db, 'chats/' + currentChat);
-  push(chatRef, { sender: auth.currentUser.uid, text: msg });
-  input.value = '';
-}
-
-// ---------------------
-// Polls
-// ---------------------
-function selectPoll(option) {
-  document.querySelectorAll('.poll-option').forEach(opt => opt.classList.remove('selected'));
-  option.classList.add('selected');
-}
-
+// Auth state listener
+onAuthStateChanged(auth,user=>{
+  if(user) showScreen('dashboard');
+  else showScreen('authScreen');
+});
 </script>
 </body>
 </html>
