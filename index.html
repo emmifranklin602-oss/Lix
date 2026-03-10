@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SecureSocial</title>
+  <style>
+    body { margin:0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background:#111; color:#fff; }
+    .container { height:100vh; display:flex; flex-direction:column; background:#075E54; }
+    .header { background:#128C7E; padding:15px; text-align:center; font-size:20px; font-weight:bold; position: relative; }
+    .content { flex:1; overflow-y:auto; padding:10px; background:#E5DDD5; color:#000; }
+    .card { background:#fff; border-radius:12px; padding:15px; margin:10px; box-shadow:0 2px 5px rgba(0,0,0,0.1); }
+    .hidden { display:none !important; }
+    input, button { width:100%; padding:14px; margin:8px 0; border-radius:25px; border:none; font-size:16px; box-sizing:border-box; }
+    button { background:#25D366; color:white; cursor:pointer; font-weight:bold; }
+    button:hover { background:#128C7E; }
+    .message { margin:10px 0; padding:10px 15px; border-radius:18px; max-width:80%; word-wrap:break-word; position:relative; }
+    .sent { background:#DCF8C6; align-self:flex-end; margin-left:auto; border-bottom-right-radius:4px; }
+    .received { background:#fff; align-self:flex-start; margin-right:auto; border-bottom-left-radius:4px; }
+    .meta { font-size:11px; color:#666; margin-top:3px; text-align:right; }
+    .bottom-nav { background:#075E54; display:flex; justify-content:space-around; padding:8px 0; position:fixed; bottom:0; width:100%; border-top:1px solid #128C7E; }
+    .bottom-nav button { background:none; color:#fff; border:none; font-size:14px; flex:1; text-align:center; }
+    .bottom-nav button.active { color:#25D366; font-weight:bold; }
+    #recaptcha-container { height:0; visibility:hidden; }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <!-- PHONE LOGIN -->
+  <div id="phoneScreen" class="card">
+    <h3>Login with Phone</h3>
+    <input id="phone" placeholder="+234XXXXXXXXXX" type="tel">
+    <button onclick="sendCode()">Send Code</button>
+    <div id="recaptcha-container"></div>
+  </div>
+
+  <!-- OTP -->
+  <div id="otpScreen" class="card hidden">
+    <h3>Enter Code</h3>
+    <input id="otp" placeholder="6-digit code" maxlength="6">
+    <button onclick="verifyCode()">Verify</button>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="dashboardScreen" class="card hidden">
+    <h3>SecureSocial</h3>
+    <button onclick="showScreen('contactsScreen')">New Chat</button>
+    <button onclick="showScreen('communityScreen')">Community</button>
+    <button onclick="showScreen('storiesScreen')">Status</button>
+    <button onclick="showScreen('videoScreen')">Media</button>
+    <button onclick="logout()" style="background:#e74c3c;">Logout</button>
+  </div>
+
+  <!-- CONTACTS / NEW CHAT -->
+  <div id="contactsScreen" class="card hidden">
+    <h3>Start Chat with Number</h3>
+    <input id="contactPhone" placeholder="+234XXXXXXXXXX">
+    <button onclick="startPrivateChat()">Start Chat</button>
+    <button onclick="showScreen('dashboardScreen')">Back</button>
+  </div>
+
+  <!-- PRIVATE CHAT -->
+  <div id="privateChatScreen" class="card hidden">
+    <h3 id="privateTitle">Chat</h3>
+    <div id="privateMessages" style="min-height:60vh"></div>
+    <input id="privateInput" placeholder="Type a message">
+    <button onclick="sendPrivateMessage()">Send</button>
+    <button onclick="showScreen('dashboardScreen')">Back</button>
+  </div>
+
+  <!-- COMMUNITY -->
+  <div id="communityScreen" class="card hidden">
+    <h3>Community Chat</h3>
+    <div id="communityMessages" style="min-height:60vh"></div>
+    <input id="communityInput" placeholder="Type message">
+    <button onclick="sendCommunityMessage()">Send</button>
+    <button onclick="showScreen('dashboardScreen')">Back</button>
+  </div>
+
+  <!-- STORIES / STATUS -->
+  <div id="storiesScreen" class="card hidden">
+    <h3>Status</h3>
+    <input id="storyInput" placeholder="Post status...">
+    <button onclick="postStory()">Post</button>
+    <div id="storiesFeed"></div>
+    <button onclick="showScreen('dashboardScreen')">Back</button>
+  </div>
+
+  <!-- VIDEOS / MEDIA -->
+  <div id="videoScreen" class="card hidden">
+    <h3>Media</h3>
+    <input id="videoFile" type="file" accept="video/*">
+    <button onclick="postVideo()">Upload Video</button>
+    <div id="uploadMsg"></div>
+    <div id="videoFeed"></div>
+    <button onclick="showScreen('dashboardScreen')">Back</button>
+  </div>
+
+  <!-- Bottom Navigation -->
+  <div class="bottom-nav">
+    <button onclick="showScreen('dashboardScreen')">Chats</button>
+    <button onclick="showScreen('communityScreen')">Community</button>
+    <button onclick="showScreen('storiesScreen')">Status</button>
+    <button onclick="showScreen('videoScreen')">Media</button>
+  </div>
+
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+  import { getAuth, RecaptchaVerifier, signInWithPhoneNumber, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+  import { getDatabase, ref, push, onValue, set } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
+  import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-storage.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAHSDsfR9SBlYaemSLDL6Z2qNR1x0QREuM",
+    authDomain: "social-d0b33.firebaseapp.com",
+    databaseURL: "https://social-d0b33-default-rtdb.firebaseio.com",
+    projectId: "social-d0b33",
+    storageBucket: "social-d0b33.appspot.com",
+    messagingSenderId: "1004582299104",
+    appId: "1:1004582299104:web:fc4679e9ced235c0ea3785"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getDatabase(app);
+  const storage = getStorage(app);
+
+  let confirmationResult = null;
+  let currentUserPhone = null;
+
+  function showScreen(id) {
+    document.querySelectorAll('.card').forEach(el => el.classList.add('hidden'));
+    document.getElementById(id).classList.remove('hidden');
+  }
+
+  // reCAPTCHA setup
+  const recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+    size: 'invisible',
+    callback: () => console.log('reCAPTCHA solved'),
+    'expired-callback': () => console.log('reCAPTCHA expired')
+  });
+
+  window.sendCode = async () => {
+    const phone = document.getElementById('phone').value.trim();
+    if (!phone.startsWith('+')) return alert("Use +234XXXXXXXXXX format");
+
+    try {
+      confirmationResult = await signInWithPhoneNumber(auth, phone, recaptchaVerifier);
+      showScreen('otpScreen');
+    } catch (e) {
+      alert("Send code error: " + e.message);
+    }
+  };
+
+  window.verifyCode = async () => {
+    const code = document.getElementById('otp').value.trim();
+    try {
+      const result = await confirmationResult.confirm(code);
+      currentUserPhone = result.user.phoneNumber;
+      set(ref(db, "users/" + result.user.uid), {phone: currentUserPhone});
+      showScreen('dashboardScreen');
+      startRealtime();
+    } catch (e) {
+      alert("Wrong code: " + e.message);
+    }
+  };
+
+  window.logout = () => signOut(auth);
+
+  function startRealtime() {
+    // Community
+    onValue(ref(db, 'community'), snap => {
+      let html = '';
+      const data = snap.val() || {};
+      for (let key in data) {
+        html += `<div class="message received">\( {data[key].text}<div class="meta"> \){new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div></div>`;
+      }
+      document.getElementById('communityMessages').innerHTML = html;
+      document.getElementById('communityMessages').scrollTop = 999999;
+    });
+
+    // Videos
+    onValue(ref(db, 'videos'), snap => {
+      let html = '';
+      const data = snap.val() || {};
+      for (let key in data) {
+        html += `<video controls src="${data[key].url}" style="width:100%;margin:10px 0;border-radius:10px"></video>`;
+      }
+      document.getElementById('videoFeed').innerHTML = html;
+    });
+  }
+
+  window.sendCommunityMessage = () => {
+    const text = document.getElementById('communityInput').value.trim();
+    if (text) push(ref(db, 'community'), {text});
+    document.getElementById('communityInput').value = '';
+  };
+
+  window.postVideo = async () => {
+    const file = document.getElementById('videoFile').files[0];
+    if (!file) return alert("Select a video");
+    document.getElementById('uploadMsg').textContent = "Uploading...";
+    const path = `videos/\( {Date.now()}_ \){file.name}`;
+    const fileRef = sRef(storage, path);
+    await uploadBytes(fileRef, file);
+    const url = await getDownloadURL(fileRef);
+    push(ref(db, 'videos'), {url});
+    document.getElementById('uploadMsg').textContent = "Uploaded!";
+    document.getElementById('videoFile').value = '';
+  };
+
+  window.startPrivateChat = () => {
+    const phone = document.getElementById('contactPhone').value.trim();
+    if (!phone) return alert("Enter phone number");
+    showScreen('privateChatScreen');
+    document.getElementById('privateTitle').textContent = "Chat with " + phone;
+  };
+
+  window.sendPrivateMessage = () => {
+    const text = document.getElementById('privateInput').value.trim();
+    if (text) push(ref(db, 'privateChats'), {text});
+    document.getElementById('privateInput').value = '';
+  };
+
+  window.postStory = () => {
+    const text = document.getElementById('storyInput').value.trim();
+    if (text) push(ref(db, 'stories'), {text});
+    document.getElementById('storyInput').value = '';
+  };
+</script>
+
+</body>
+</html>
