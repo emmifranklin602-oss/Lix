@@ -1,396 +1,321 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SecureSocial</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SecureSocial</title>
 
-<style>
-body{
-font-family:Arial,Helvetica,sans-serif;
-background:#1e3c72;
-color:white;
-margin:0;
-}
+  <style>
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      background: #1e3c72;
+      color: white;
+      margin: 0;
+    }
+    .container {
+      max-width: 420px;
+      margin: auto;
+      padding: 20px;
+    }
+    .card {
+      background: white;
+      color: black;
+      padding: 20px;
+      border-radius: 12px;
+      margin-top: 20px;
+    }
+    input, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+    button {
+      background: #4f6df5;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #3448c5;
+    }
+    .hidden {
+      display: none !important;
+    }
+    .message {
+      background: #eee;
+      padding: 8px;
+      border-radius: 6px;
+      margin-top: 6px;
+      color: black;
+      font-weight: bold;
+    }
+    video {
+      width: 100%;
+      margin-top: 10px;
+      border-radius: 10px;
+    }
+    #verifyBanner {
+      background: #fff3cd;
+      color: #856404;
+      padding: 10px;
+      border-radius: 6px;
+      margin-bottom: 15px;
+      display: none;
+    }
+  </style>
 
-.container{
-max-width:420px;
-margin:auto;
-padding:20px;
-}
+  <script type="module">
+    // Firebase imports (updated to latest modular v10)
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+    import {
+      getAuth,
+      createUserWithEmailAndPassword,
+      signInWithEmailAndPassword,
+      sendEmailVerification,
+      onAuthStateChanged,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+    import {
+      getDatabase,
+      ref,
+      set,
+      push,
+      onValue
+    } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
+    import {
+      getStorage,
+      ref as storageRef,
+      uploadBytes,
+      getDownloadURL
+    } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-storage.js";
 
-.card{
-background:white;
-color:black;
-padding:20px;
-border-radius:12px;
-margin-top:20px;
-}
+    const firebaseConfig = {
+      apiKey: "AIzaSyAHSDsfR9SBlYaemSLDL6Z2qNR1x0QREuM",
+      authDomain: "social-d0b33.firebaseapp.com",
+      databaseURL: "https://social-d0b33-default-rtdb.firebaseio.com",
+      projectId: "social-d0b33",
+      storageBucket: "social-d0b33.appspot.com",
+      messagingSenderId: "1004582299104",
+      appId: "1:1004582299104:web:fc4679e9ced235c0ea3785"
+    };
 
-input,button{
-width:100%;
-padding:10px;
-margin-top:10px;
-border-radius:6px;
-border:1px solid #ccc;
-}
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+    const storage = getStorage(app);
 
-button{
-background:#4f6df5;
-color:white;
-border:none;
-cursor:pointer;
-}
+    // DOM elements
+    const authScreen = document.getElementById('authScreen');
+    const dashboard = document.getElementById('dashboard');
+    const chatScreen = document.getElementById('chatScreen');
+    const groupScreen = document.getElementById('groupScreen');
+    const videoScreen = document.getElementById('videoScreen');
+    const msgDiv = document.getElementById('message');
 
-button:hover{
-background:#3448c5;
-}
+    function showScreen(id) {
+      document.querySelectorAll('.card').forEach(el => el.classList.add('hidden'));
+      document.getElementById(id).classList.remove('hidden');
+    }
 
-.hidden{
-display:none;
-}
+    // Improved auth handler
+    async function handleAuth(isSignup = false) {
+      msgDiv.textContent = '';
+      const email = document.getElementById('email').value.trim();
+      const pass = document.getElementById('password').value;
 
-.message{
-background:#eee;
-padding:8px;
-border-radius:6px;
-margin-top:6px;
-}
+      if (!email || !pass) {
+        msgDiv.textContent = 'Enter email and password';
+        msgDiv.style.color = 'red';
+        return;
+      }
 
-video{
-width:100%;
-margin-top:10px;
-border-radius:10px;
-}
-</style>
+      try {
+        if (isSignup) {
+          const userCred = await createUserWithEmailAndPassword(auth, email, pass);
+          await sendEmailVerification(userCred.user);
+          msgDiv.textContent = 'Account created! Check email (including spam) to verify.';
+          msgDiv.style.color = 'green';
+        } else {
+          await signInWithEmailAndPassword(auth, email, pass);
+          msgDiv.textContent = 'Logged in successfully!';
+          msgDiv.style.color = 'green';
+        }
+      } catch (e) {
+        let text = e.message;
+        if (e.code === 'auth/email-already-in-use') text = 'Email already used – try Login';
+        else if (e.code === 'auth/user-not-found') text = 'No account found – try Sign Up';
+        else if (e.code === 'auth/wrong-password') text = 'Wrong password';
+        else if (e.code === 'auth/weak-password') text = 'Password too short (at least 6 chars)';
+        else if (e.code === 'auth/invalid-email') text = 'Invalid email format';
+        msgDiv.textContent = 'Error: ' + text;
+        msgDiv.style.color = 'red';
+      }
+    }
+
+    window.signup = () => handleAuth(true);
+    window.login = () => handleAuth(false);
+
+    window.logout = async () => {
+      await signOut(auth);
+    };
+
+    onAuthStateChanged(auth, user => {
+      if (user) {
+        showScreen('dashboard');
+        if (!user.emailVerified) {
+          document.getElementById('verifyBanner').style.display = 'block';
+        }
+      } else {
+        showScreen('authScreen');
+      }
+    });
+
+    // Chat
+    window.openChat = () => {
+      showScreen('chatScreen');
+      const chatRef = ref(db, 'chat');
+      onValue(chatRef, snap => {
+        let html = '';
+        const data = snap.val() || {};
+        for (let key in data) {
+          html += `<div class="message">${data[key].text}</div>`;
+        }
+        document.getElementById('chatMessages').innerHTML = html;
+      });
+    };
+
+    window.sendMessage = () => {
+      const input = document.getElementById('chatInput');
+      const text = input.value.trim();
+      if (text) {
+        push(ref(db, 'chat'), { text });
+        input.value = '';
+      }
+    };
+
+    // Groups
+    window.openGroups = () => {
+      showScreen('groupScreen');
+      const groupRef = ref(db, 'groups');
+      onValue(groupRef, snap => {
+        let html = '';
+        const data = snap.val() || {};
+        for (let key in data) {
+          html += `<div class="message">${data[key].name}</div>`;
+        }
+        document.getElementById('groupList').innerHTML = html;
+      });
+    };
+
+    window.createGroup = () => {
+      const input = document.getElementById('groupName');
+      const name = input.value.trim();
+      if (name) {
+        push(ref(db, 'groups'), { name });
+        input.value = '';
+      }
+    };
+
+    // Videos with Storage upload
+    window.openVideos = () => {
+      showScreen('videoScreen');
+      const videoRef = ref(db, 'videos');
+      onValue(videoRef, snap => {
+        let html = '';
+        const data = snap.val() || {};
+        for (let key in data) {
+          html += `<video controls src="${data[key].url}"></video>`;
+        }
+        document.getElementById('videoFeed').innerHTML = html;
+      });
+    };
+
+    window.postVideo = async () => {
+      const fileInput = document.getElementById('videoFile');
+      const file = fileInput.files[0];
+      if (!file) {
+        alert('Select a video file first');
+        return;
+      }
+
+      try {
+        const storagePath = `videos/\( {Date.now()}_ \){file.name}`;
+        const fileRef = storageRef(storage, storagePath);
+        await uploadBytes(fileRef, file);
+        const url = await getDownloadURL(fileRef);
+
+        push(ref(db, 'videos'), { url });
+        fileInput.value = ''; // clear input
+        alert('Video uploaded successfully!');
+      } catch (e) {
+        alert('Upload failed: ' + e.message);
+      }
+    };
+
+    window.goHome = () => showScreen('dashboard');
+  </script>
 </head>
 
 <body>
 
 <div class="container">
 
-<h2>SecureSocial</h2>
+  <h2>SecureSocial</h2>
 
-<!-- AUTH SCREEN -->
+  <!-- AUTH SCREEN -->
+  <div id="authScreen" class="card">
+    <h3>Login / Sign Up</h3>
+    <input id="email" placeholder="Email" type="email">
+    <input id="password" type="password" placeholder="Password">
+    <button onclick="login()">Login</button>
+    <button onclick="signup()">Sign Up</button>
+    <div id="message" class="message"></div>
+  </div>
 
-<div id="authScreen" class="card">
+  <!-- DASHBOARD -->
+  <div id="dashboard" class="card hidden">
+    <div id="verifyBanner">
+      Please verify your email (check inbox/spam). 
+      <button onclick="location.reload()">Refresh after verifying</button>
+    </div>
+    <h3>Dashboard</h3>
+    <button onclick="openChat()">Chat</button>
+    <button onclick="openGroups()">Groups</button>
+    <button onclick="openVideos()">Videos</button>
+    <button onclick="logout()" style="background:#e74c3c;">Logout</button>
+  </div>
 
-<h3>Login / Sign Up</h3>
+  <!-- CHAT -->
+  <div id="chatScreen" class="card hidden">
+    <h3>Global Chat</h3>
+    <div id="chatMessages"></div>
+    <input id="chatInput" placeholder="Message">
+    <button onclick="sendMessage()">Send</button>
+    <button onclick="goHome()">Back</button>
+  </div>
 
-<input id="email" placeholder="Email">
-<input id="password" type="password" placeholder="Password">
+  <!-- GROUPS -->
+  <div id="groupScreen" class="card hidden">
+    <h3>Groups</h3>
+    <input id="groupName" placeholder="Group name">
+    <button onclick="createGroup()">Create Group</button>
+    <div id="groupList"></div>
+    <button onclick="goHome()">Back</button>
+  </div>
 
-<button onclick="signup()">Sign Up</button>
-<button onclick="login()">Login</button>
-
-</div>
-
-
-<!-- DASHBOARD -->
-
-<div id="dashboard" class="card hidden">
-
-<h3>Dashboard</h3>
-
-<button onclick="openChat()">Chat</button>
-<button onclick="openGroups()">Groups</button>
-<button onclick="openVideos()">Videos</button>
-<button onclick="logout()">Logout</button>
-
-</div>
-
-
-<!-- CHAT -->
-
-<div id="chatScreen" class="card hidden">
-
-<h3>Global Chat</h3>
-
-<div id="chatMessages"></div>
-
-<input id="chatInput" placeholder="Message">
-<button onclick="sendMessage()">Send</button>
-
-<button onclick="goHome()">Back</button>
-
-</div>
-
-
-<!-- GROUPS -->
-
-<div id="groupScreen" class="card hidden">
-
-<h3>Groups</h3>
-
-<input id="groupName" placeholder="Group name">
-<button onclick="createGroup()">Create Group</button>
-
-<div id="groupList"></div>
-
-<button onclick="goHome()">Back</button>
+  <!-- VIDEOS -->
+  <div id="videoScreen" class="card hidden">
+    <h3>Videos</h3>
+    <input id="videoFile" type="file" accept="video/*">
+    <button onclick="postVideo()">Upload Video</button>
+    <div id="videoFeed"></div>
+    <button onclick="goHome()">Back</button>
+  </div>
 
 </div>
-
-
-<!-- VIDEOS -->
-
-<div id="videoScreen" class="card hidden">
-
-<h3>Videos</h3>
-
-<input id="videoURL" placeholder="Paste video URL">
-<button onclick="postVideo()">Post Video</button>
-
-<div id="videoFeed"></div>
-
-<button onclick="goHome()">Back</button>
-
-</div>
-
-
-</div>
-
-
-
-<script type="module">
-
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-import { getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut,onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
-import { getDatabase,ref,set,push,onValue } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
-
-
-const firebaseConfig = {
-
-apiKey: "AIzaSyAHSDsfR9SBlYaemSLDL6Z2qNR1x0QREuM",
-authDomain: "social-d0b33.firebaseapp.com",
-databaseURL:"https://social-d0b33-default-rtdb.firebaseio.com",
-projectId: "social-d0b33",
-storageBucket: "social-d0b33.appspot.com",
-messagingSenderId: "1004582299104",
-appId: "1:1004582299104:web:fc4679e9ced235c0ea3785"
-
-};
-
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getDatabase(app);
-
-
-
-function show(id){
-
-document.getElementById("authScreen").classList.add("hidden");
-document.getElementById("dashboard").classList.add("hidden");
-document.getElementById("chatScreen").classList.add("hidden");
-document.getElementById("groupScreen").classList.add("hidden");
-document.getElementById("videoScreen").classList.add("hidden");
-
-document.getElementById(id).classList.remove("hidden");
-
-}
-
-
-
-window.signup = function(){
-
-let email=document.getElementById("email").value;
-let pass=document.getElementById("password").value;
-
-createUserWithEmailAndPassword(auth,email,pass)
-
-.then((user)=>{
-
-set(ref(db,"users/"+user.user.uid),{
-email:email
-});
-
-alert("Account created");
-
-})
-
-.catch(e=>alert(e.message))
-
-}
-
-
-
-window.login = function(){
-
-let email=document.getElementById("email").value;
-let pass=document.getElementById("password").value;
-
-signInWithEmailAndPassword(auth,email,pass)
-
-.catch(e=>alert(e.message))
-
-}
-
-
-
-window.logout = function(){
-
-signOut(auth)
-
-}
-
-
-
-onAuthStateChanged(auth,(user)=>{
-
-if(user){
-
-show("dashboard");
-
-}else{
-
-show("authScreen");
-
-}
-
-})
-
-
-
-/* CHAT */
-
-window.openChat=function(){
-
-show("chatScreen")
-
-const chatRef=ref(db,"chat")
-
-onValue(chatRef,(snap)=>{
-
-let data=snap.val()
-
-let html=""
-
-for(let id in data){
-
-html+="<div class='message'>"+data[id].text+"</div>"
-
-}
-
-document.getElementById("chatMessages").innerHTML=html
-
-})
-
-}
-
-
-
-window.sendMessage=function(){
-
-let msg=document.getElementById("chatInput").value
-
-push(ref(db,"chat"),{
-
-text:msg
-
-})
-
-document.getElementById("chatInput").value=""
-
-}
-
-
-
-/* GROUPS */
-
-window.openGroups=function(){
-
-show("groupScreen")
-
-const groupRef=ref(db,"groups")
-
-onValue(groupRef,(snap)=>{
-
-let data=snap.val()
-
-let html=""
-
-for(let id in data){
-
-html+="<div class='message'>"+data[id].name+"</div>"
-
-}
-
-document.getElementById("groupList").innerHTML=html
-
-})
-
-}
-
-
-
-window.createGroup=function(){
-
-let name=document.getElementById("groupName").value
-
-push(ref(db,"groups"),{
-
-name:name
-
-})
-
-document.getElementById("groupName").value=""
-
-}
-
-
-
-/* VIDEOS */
-
-window.openVideos=function(){
-
-show("videoScreen")
-
-const videoRef=ref(db,"videos")
-
-onValue(videoRef,(snap)=>{
-
-let data=snap.val()
-
-let html=""
-
-for(let id in data){
-
-html+="<video controls src='"+data[id].url+"'></video>"
-
-}
-
-document.getElementById("videoFeed").innerHTML=html
-
-})
-
-}
-
-
-
-window.postVideo=function(){
-
-let url=document.getElementById("videoURL").value
-
-push(ref(db,"videos"),{
-
-url:url
-
-})
-
-document.getElementById("videoURL").value=""
-
-}
-
-
-
-window.goHome=function(){
-
-show("dashboard")
-
-}
-
-</script>
 
 </body>
 </html>
