@@ -4,93 +4,34 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SecureSocial</title>
-
   <style>
-    body {
-      font-family: Arial, Helvetica, sans-serif;
-      background: #1e3c72;
-      color: white;
-      margin: 0;
-    }
-    .container {
-      max-width: 420px;
-      margin: auto;
-      padding: 20px;
-    }
-    .card {
-      background: white;
-      color: black;
-      padding: 20px;
-      border-radius: 12px;
-      margin-top: 20px;
-    }
-    input, button {
-      width: 100%;
-      padding: 10px;
-      margin-top: 10px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      box-sizing: border-box;
-    }
-    button {
-      background: #4f6df5;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #3448c5;
-    }
-    .hidden {
-      display: none !important;
-    }
-    .message {
-      background: #eee;
-      padding: 8px;
-      border-radius: 6px;
-      margin-top: 6px;
-      color: black;
-      font-weight: bold;
-    }
-    video {
-      width: 100%;
-      margin-top: 10px;
-      border-radius: 10px;
-    }
-    #verifyBanner {
-      background: #fff3cd;
-      color: #856404;
-      padding: 10px;
-      border-radius: 6px;
-      margin-bottom: 15px;
-      display: none;
-    }
+    body { margin:0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background:#111; color:#fff; }
+    .container { max-width:100%; height:100vh; display:flex; flex-direction:column; background:#075E54; }
+    .header { background:#128C7E; padding:15px; text-align:center; font-weight:bold; font-size:20px; position:relative; }
+    .content { flex:1; overflow-y:auto; padding:10px; background:#E5DDD5; }
+    .card { background:#fff; border-radius:12px; padding:15px; margin:10px; box-shadow:0 2px 5px rgba(0,0,0,0.1); }
+    .hidden { display:none !important; }
+    input, button { width:100%; padding:12px; margin:8px 0; border-radius:25px; border:none; font-size:16px; box-sizing:border-box; }
+    button { background:#25D366; color:white; cursor:pointer; font-weight:bold; }
+    button:hover { background:#128C7E; }
+    .message { margin:10px 0; padding:10px 15px; border-radius:18px; max-width:80%; word-wrap:break-word; position:relative; }
+    .sent { background:#DCF8C6; align-self:flex-end; margin-left:auto; border-bottom-right-radius:4px; }
+    .received { background:#fff; align-self:flex-start; margin-right:auto; border-bottom-left-radius:4px; }
+    .meta { font-size:11px; color:#666; margin-top:3px; text-align:right; }
+    .bottom-nav { background:#075E54; display:flex; justify-content:space-around; padding:10px 0; position:fixed; bottom:0; width:100%; border-top:1px solid #128C7E; }
+    .bottom-nav button { background:none; color:#fff; border:none; font-size:14px; flex:1; }
+    .bottom-nav button.active { color:#25D366; font-weight:bold; }
+    #verifyBanner { background:#FEF9E7; color:#333; padding:15px; margin:10px; border-radius:12px; text-align:center; font-weight:bold; }
+    #verifyBanner button { background:#25D366; color:white; border:none; padding:10px 20px; border-radius:20px; margin-top:8px; }
+    .chat-container { display:flex; flex-direction:column; }
+    .upload-msg { text-align:center; padding:10px; font-weight:bold; }
   </style>
 
   <script type="module">
-    // Firebase imports (updated to latest modular v10)
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-    import {
-      getAuth,
-      createUserWithEmailAndPassword,
-      signInWithEmailAndPassword,
-      sendEmailVerification,
-      onAuthStateChanged,
-      signOut
-    } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-    import {
-      getDatabase,
-      ref,
-      set,
-      push,
-      onValue
-    } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
-    import {
-      getStorage,
-      ref as storageRef,
-      uploadBytes,
-      getDownloadURL
-    } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-storage.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+    import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
+    import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-storage.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAHSDsfR9SBlYaemSLDL6Z2qNR1x0QREuM",
@@ -107,155 +48,105 @@
     const db = getDatabase(app);
     const storage = getStorage(app);
 
-    // DOM elements
     const authScreen = document.getElementById('authScreen');
-    const dashboard = document.getElementById('dashboard');
+    const dashboardScreen = document.getElementById('dashboardScreen');
     const chatScreen = document.getElementById('chatScreen');
     const groupScreen = document.getElementById('groupScreen');
     const videoScreen = document.getElementById('videoScreen');
-    const msgDiv = document.getElementById('message');
+    const verifyBanner = document.getElementById('verifyBanner');
 
-    function showScreen(id) {
-      document.querySelectorAll('.card').forEach(el => el.classList.add('hidden'));
-      document.getElementById(id).classList.remove('hidden');
+    function showScreen(screen) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+      screen.classList.remove('hidden');
     }
 
-    // Improved auth handler
-    async function handleAuth(isSignup = false) {
-      msgDiv.textContent = '';
+    // Auth
+    async function handleAuth(isSignup) {
       const email = document.getElementById('email').value.trim();
       const pass = document.getElementById('password').value;
+      const msg = document.getElementById('authMsg');
 
-      if (!email || !pass) {
-        msgDiv.textContent = 'Enter email and password';
-        msgDiv.style.color = 'red';
-        return;
-      }
+      if (!email || !pass) return msg.textContent = "Enter email and password";
 
       try {
         if (isSignup) {
           const userCred = await createUserWithEmailAndPassword(auth, email, pass);
           await sendEmailVerification(userCred.user);
-          msgDiv.textContent = 'Account created! Check email (including spam) to verify.';
-          msgDiv.style.color = 'green';
+          msg.style.color = "green";
+          msg.textContent = "Account created! Check your email (including spam).";
         } else {
           await signInWithEmailAndPassword(auth, email, pass);
-          msgDiv.textContent = 'Logged in successfully!';
-          msgDiv.style.color = 'green';
         }
       } catch (e) {
-        let text = e.message;
-        if (e.code === 'auth/email-already-in-use') text = 'Email already used – try Login';
-        else if (e.code === 'auth/user-not-found') text = 'No account found – try Sign Up';
-        else if (e.code === 'auth/wrong-password') text = 'Wrong password';
-        else if (e.code === 'auth/weak-password') text = 'Password too short (at least 6 chars)';
-        else if (e.code === 'auth/invalid-email') text = 'Invalid email format';
-        msgDiv.textContent = 'Error: ' + text;
-        msgDiv.style.color = 'red';
+        msg.style.color = "red";
+        msg.textContent = e.message.includes("already") ? "Email already used – try Login" : e.message;
       }
     }
 
     window.signup = () => handleAuth(true);
     window.login = () => handleAuth(false);
-
-    window.logout = async () => {
-      await signOut(auth);
-    };
+    window.logout = () => signOut(auth);
 
     onAuthStateChanged(auth, user => {
       if (user) {
-        showScreen('dashboard');
-        if (!user.emailVerified) {
-          document.getElementById('verifyBanner').style.display = 'block';
-        }
+        showScreen(dashboardScreen);
+        verifyBanner.style.display = user.emailVerified ? 'none' : 'block';
       } else {
-        showScreen('authScreen');
+        showScreen(authScreen);
       }
     });
 
     // Chat
     window.openChat = () => {
-      showScreen('chatScreen');
+      showScreen(chatScreen);
       const chatRef = ref(db, 'chat');
       onValue(chatRef, snap => {
         let html = '';
         const data = snap.val() || {};
         for (let key in data) {
-          html += `<div class="message">${data[key].text}</div>`;
+          html += `<div class="message sent"><b>You</b><br>\( {data[key].text}<div class="meta"> \){new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div></div>`;
         }
         document.getElementById('chatMessages').innerHTML = html;
+        document.getElementById('chatMessages').scrollTop = 999999;
       });
     };
-
     window.sendMessage = () => {
-      const input = document.getElementById('chatInput');
-      const text = input.value.trim();
-      if (text) {
-        push(ref(db, 'chat'), { text });
-        input.value = '';
-      }
+      const text = document.getElementById('chatInput').value.trim();
+      if (text) push(ref(db, 'chat'), { text, time: Date.now() });
+      document.getElementById('chatInput').value = '';
     };
 
-    // Groups
-    window.openGroups = () => {
-      showScreen('groupScreen');
-      const groupRef = ref(db, 'groups');
-      onValue(groupRef, snap => {
-        let html = '';
-        const data = snap.val() || {};
-        for (let key in data) {
-          html += `<div class="message">${data[key].name}</div>`;
-        }
-        document.getElementById('groupList').innerHTML = html;
-      });
-    };
-
+    // Groups & Videos (kept simple but styled)
+    window.openGroups = () => showScreen(groupScreen);
     window.createGroup = () => {
-      const input = document.getElementById('groupName');
-      const name = input.value.trim();
-      if (name) {
-        push(ref(db, 'groups'), { name });
-        input.value = '';
-      }
+      const name = document.getElementById('groupName').value.trim();
+      if (name) push(ref(db, 'groups'), { name });
+      document.getElementById('groupName').value = '';
     };
 
-    // Videos with Storage upload
-    window.openVideos = () => {
-      showScreen('videoScreen');
-      const videoRef = ref(db, 'videos');
-      onValue(videoRef, snap => {
-        let html = '';
-        const data = snap.val() || {};
-        for (let key in data) {
-          html += `<video controls src="${data[key].url}"></video>`;
-        }
-        document.getElementById('videoFeed').innerHTML = html;
-      });
-    };
-
+    window.openVideos = () => showScreen(videoScreen);
     window.postVideo = async () => {
-      const fileInput = document.getElementById('videoFile');
-      const file = fileInput.files[0];
-      if (!file) {
-        alert('Select a video file first');
-        return;
-      }
+      const file = document.getElementById('videoFile').files[0];
+      const msgDiv = document.getElementById('uploadMsg');
+      if (!file) return msgDiv.textContent = "Select a video first";
 
+      msgDiv.textContent = "Uploading...";
       try {
         const storagePath = `videos/\( {Date.now()}_ \){file.name}`;
-        const fileRef = storageRef(storage, storagePath);
+        const fileRef = sRef(storage, storagePath);
         await uploadBytes(fileRef, file);
         const url = await getDownloadURL(fileRef);
-
         push(ref(db, 'videos'), { url });
-        fileInput.value = ''; // clear input
-        alert('Video uploaded successfully!');
+        msgDiv.style.color = "green";
+        msgDiv.textContent = "Video uploaded successfully!";
+        document.getElementById('videoFile').value = '';
       } catch (e) {
-        alert('Upload failed: ' + e.message);
+        msgDiv.style.color = "red";
+        msgDiv.textContent = "Upload failed";
       }
     };
 
-    window.goHome = () => showScreen('dashboard');
+    window.goHome = () => showScreen(dashboardScreen);
   </script>
 </head>
 
@@ -263,42 +154,41 @@
 
 <div class="container">
 
-  <h2>SecureSocial</h2>
+  <div class="header">SecureSocial</div>
 
-  <!-- AUTH SCREEN -->
-  <div id="authScreen" class="card">
-    <h3>Login / Sign Up</h3>
+  <!-- AUTH -->
+  <div id="authScreen" class="screen card">
+    <h3 style="text-align:center;color:#128C7E;">Login / Sign Up</h3>
     <input id="email" placeholder="Email" type="email">
     <input id="password" type="password" placeholder="Password">
     <button onclick="login()">Login</button>
     <button onclick="signup()">Sign Up</button>
-    <div id="message" class="message"></div>
+    <div id="authMsg" style="text-align:center;margin-top:10px;font-weight:bold;"></div>
   </div>
 
   <!-- DASHBOARD -->
-  <div id="dashboard" class="card hidden">
-    <div id="verifyBanner">
-      Please verify your email (check inbox/spam). 
+  <div id="dashboardScreen" class="screen card hidden">
+    <div id="verifyBanner" style="display:none;">
+      Please verify your email (check inbox/spam).<br>
       <button onclick="location.reload()">Refresh after verifying</button>
     </div>
-    <h3>Dashboard</h3>
-    <button onclick="openChat()">Chat</button>
-    <button onclick="openGroups()">Groups</button>
-    <button onclick="openVideos()">Videos</button>
+    <h3 style="text-align:center;">Dashboard</h3>
+    <button onclick="openChat()">💬 Chat</button>
+    <button onclick="openGroups()">👥 Groups</button>
+    <button onclick="openVideos()">📹 Videos</button>
     <button onclick="logout()" style="background:#e74c3c;">Logout</button>
   </div>
 
   <!-- CHAT -->
-  <div id="chatScreen" class="card hidden">
-    <h3>Global Chat</h3>
-    <div id="chatMessages"></div>
-    <input id="chatInput" placeholder="Message">
+  <div id="chatScreen" class="screen hidden">
+    <div id="chatMessages" class="chat-container" style="min-height:70vh;"></div>
+    <input id="chatInput" placeholder="Type a message...">
     <button onclick="sendMessage()">Send</button>
     <button onclick="goHome()">Back</button>
   </div>
 
   <!-- GROUPS -->
-  <div id="groupScreen" class="card hidden">
+  <div id="groupScreen" class="screen card hidden">
     <h3>Groups</h3>
     <input id="groupName" placeholder="Group name">
     <button onclick="createGroup()">Create Group</button>
@@ -307,12 +197,21 @@
   </div>
 
   <!-- VIDEOS -->
-  <div id="videoScreen" class="card hidden">
+  <div id="videoScreen" class="screen card hidden">
     <h3>Videos</h3>
     <input id="videoFile" type="file" accept="video/*">
     <button onclick="postVideo()">Upload Video</button>
+    <div id="uploadMsg" class="upload-msg"></div>
     <div id="videoFeed"></div>
     <button onclick="goHome()">Back</button>
+  </div>
+
+  <!-- Bottom Navigation (WhatsApp style) -->
+  <div class="bottom-nav">
+    <button onclick="goHome()">Home</button>
+    <button onclick="openChat()" class="active">💬 Chat</button>
+    <button onclick="openGroups()">👥 Groups</button>
+    <button onclick="openVideos()">📹 Videos</button>
   </div>
 
 </div>
