@@ -21,7 +21,6 @@
   .bottom-nav{background:#075E54;display:flex;justify-content:space-around;padding:10px 0;position:fixed;bottom:0;width:100%}
   .bottom-nav button{background:none;color:#fff;border:none;flex:1;font-size:14px}
   .bottom-nav button.active{color:#25D366;font-weight:bold}
-  #verifyBanner{background:#FEF9E7;color:#333;padding:15px;margin:10px;border-radius:12px;text-align:center}
 </style>
 
 <script type="module">
@@ -57,12 +56,12 @@ function showScreen(id) {
 // Phone OTP (exactly like WhatsApp)
 window.sendCode = async () => {
   const phone = document.getElementById('phone').value.trim();
-  if (!phone) return alert("Enter phone number with country code e.g. +234...");
+  if (!phone) return alert("Enter phone number with country code (+234...)");
   try {
-    const recaptcha = new firebase.auth.RecaptchaVerifier('recaptcha-container', {size: 'invisible'});
-    confirmationResult = await signInWithPhoneNumber(auth, phone, recaptcha);
+    const recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {size: 'invisible'});
+    confirmationResult = await signInWithPhoneNumber(auth, phone, recaptchaVerifier);
     showScreen('otpScreen');
-  } catch (e) { alert("Error: " + e.message); }
+  } catch (e) { alert("Error sending code: " + e.message); }
 };
 
 window.verifyCode = async () => {
@@ -70,16 +69,14 @@ window.verifyCode = async () => {
   try {
     const result = await confirmationResult.confirm(code);
     currentUserPhone = result.user.phoneNumber;
-    // Save user phone
     set(ref(db, "users/" + result.user.uid), {phone: currentUserPhone});
     showScreen('dashboardScreen');
     startRealtime();
   } catch (e) { alert("Wrong code. Try again."); }
 };
 
-// Realtime listeners (fixed - updates instantly)
+// Start realtime updates (fixed - now works instantly)
 function startRealtime() {
-  // Private chats handled in openPrivateChat
   // Community
   onValue(ref(db, 'community'), snap => {
     let html = '';
@@ -90,30 +87,24 @@ function startRealtime() {
     document.getElementById('communityMessages').innerHTML = html;
     document.getElementById('communityMessages').scrollTop = 999999;
   });
-}
-
-// Add contact by number & private chat
-window.startPrivateChat = async () => {
-  const phone = document.getElementById('contactPhone').value.trim();
-  if (!phone) return alert("Enter phone number");
-  // Check if user exists
-  const snapshot = await new Promise(r => onValue(ref(db, 'users'), snap => r(snap), {onlyOnce:true}));
-  let exists = false;
-  snapshot.forEach(child => { if (child.val().phone === phone) exists = true; });
-  if (!exists) return alert("This number is not using the app yet.");
-  const roomId = [currentUserPhone, phone].sort().join('_');
-  showScreen('privateChatScreen');
-  document.getElementById('privateChatTitle').textContent = "Chat with " + phone;
-  // Load messages
-  onValue(ref(db, 'chats/' + roomId), snap => {
+  // Videos
+  onValue(ref(db, 'videos'), snap => {
     let html = '';
     const data = snap.val() || {};
     for (let key in data) {
-      html += `<div class="message sent">\( {data[key].text}<div class="meta"> \){new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div></div>`;
+      html += `<video controls src="${data[key].url}" style="width:100%;margin:10px 0;border-radius:10px"></video>`;
     }
-    document.getElementById('privateMessages').innerHTML = html;
-    document.getElementById('privateMessages').scrollTop = 999999;
+    document.getElementById('videoFeed').innerHTML = html;
   });
+}
+
+// Private chat by number
+window.startPrivateChat = () => {
+  const phone = document.getElementById('contactPhone').value.trim();
+  if (!phone) return alert("Enter phone number");
+  const roomId = [currentUserPhone, phone].sort().join('_');
+  showScreen('privateChatScreen');
+  document.getElementById('privateChatTitle').textContent = "Chat with " + phone;
 };
 
 window.sendPrivateMessage = () => {
@@ -151,21 +142,20 @@ window.aiPostNews = () => {
   push(ref(db, 'news'), {title: "🤖 AI News: " + random});
 };
 
-// Video upload (fixed - shows instantly)
+// Video upload (fixed)
 window.postVideo = async () => {
   const file = document.getElementById('videoFile').files[0];
-  if (!file) return alert("Select video first");
+  if (!file) return alert("Select a video first");
   document.getElementById('uploadMsg').innerHTML = "Uploading...";
   const path = `videos/\( {Date.now()}_ \){file.name}`;
   const fileRef = sRef(storage, path);
   await uploadBytes(fileRef, file);
   const url = await getDownloadURL(fileRef);
   push(ref(db, 'videos'), {url});
-  document.getElementById('uploadMsg').innerHTML = "✅ Video uploaded and visible!";
+  document.getElementById('uploadMsg').innerHTML = "✅ Video uploaded!";
   document.getElementById('videoFile').value = '';
 };
 
-// Logout
 window.logout = () => signOut(auth);
 
 onAuthStateChanged(auth, user => {
@@ -194,7 +184,7 @@ onAuthStateChanged(auth, user => {
   <div id="otpScreen" class="screen card hidden">
     <h3>Enter the code sent to you</h3>
     <input id="otp" placeholder="123456" maxlength="6">
-    <button onclick="verifyCode()">Verify & Enter App</button>
+    <button onclick="verifyCode()">Verify Code</button>
   </div>
 
   <!-- DASHBOARD -->
@@ -208,7 +198,7 @@ onAuthStateChanged(auth, user => {
     <button onclick="logout()" style="background:#e74c3c">Logout</button>
   </div>
 
-  <!-- NEW CHAT / ADD CONTACT -->
+  <!-- NEW CHAT -->
   <div id="contactScreen" class="screen card hidden">
     <h3>Add Person by Number</h3>
     <input id="contactPhone" placeholder="+234XXXXXXXXXX">
@@ -239,7 +229,6 @@ onAuthStateChanged(auth, user => {
     <h3>Stories</h3>
     <input id="storyInput" placeholder="Write a short story...">
     <button onclick="postStory()">Post Story</button>
-    <div id="storiesFeed"></div>
     <button onclick="showScreen('dashboardScreen')">Back</button>
   </div>
 
@@ -249,7 +238,6 @@ onAuthStateChanged(auth, user => {
     <input id="newsTitle" placeholder="Post news here...">
     <button onclick="postNews()">Post News</button>
     <button onclick="aiPostNews()">🤖 AI Post News</button>
-    <div id="newsFeed"></div>
     <button onclick="showScreen('dashboardScreen')">Back</button>
   </div>
 
